@@ -1,1 +1,1 @@
-# gemini
+# gemini-coin-mixer
