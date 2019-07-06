@@ -14,9 +14,10 @@ import server.MainSupport.{ClientAddresses, ClientTransaction}
 import service.{ClientRepo, MixingService}
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import pureconfig.loadConfig
 import pureconfig.generic.auto._
+
+import scala.util.{Success, Try}
 
 
 
@@ -63,11 +64,15 @@ object MainSupport{
 
   def cmd( s: String ): Either[String, Command] = {
     val ss = s.replaceAll("\\r", "")
-    Json.parse(ss).validate[Command] match {
-      case JsSuccess(cmd, _) =>
-        Right(cmd)
+    Try{Json.parse(ss)} match{
+      case Success(jsValue) => jsValue.validate[Command] match {
+        case JsSuccess(cmd, _) =>
+          Right(cmd)
+        case err =>
+          Left(s"Invalid command $s: $err")
+      }
       case err =>
-        Left(s"Invalid command $s: $err")
+        Left(s"Invalid command $err:")
     }
   }
 }
