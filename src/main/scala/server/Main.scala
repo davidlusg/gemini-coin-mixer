@@ -110,7 +110,7 @@ object Main extends App {
   import akka.stream.scaladsl.Framing
 
   val connections: Source[IncomingConnection, Future[ServerBinding]] =
-    Tcp().bind("127.0.0.1", 8888)
+    Tcp().bind(config.server.host, config.server.port)
 
   connections.runForeach { connection =>
 
