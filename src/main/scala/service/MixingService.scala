@@ -15,11 +15,11 @@ import server.Main.JobcoinConfig
 
 object ClientActor{
 
-  def apply( houseAccount: ActorRef, transaction: Transaction, config: JobcoinConfig ): Props = Props( new ClientActor( houseAccount, transaction, config ))
+  def apply( houseAccount: ActorRef, clientRepo: ClientRepo, transaction: Transaction, config: JobcoinConfig ): Props = Props( new ClientActor( houseAccount, clientRepo, transaction, config ))
 
 }
 
-class ClientActor(houseAccount: ActorRef, transaction: Transaction, jobConfig: JobcoinConfig) extends Actor with HouseCalculator{
+class ClientActor(houseAccount: ActorRef, clientRepo: ClientRepo, transaction: Transaction, jobConfig: JobcoinConfig) extends Actor with HouseCalculator{
 
   implicit val timeout: Timeout = 4 seconds
   case class Tick(sender: ActorRef)
@@ -28,6 +28,9 @@ class ClientActor(houseAccount: ActorRef, transaction: Transaction, jobConfig: J
 
   def process( toBeMixed: Seq[(BigDecimal, PublicKey)] = Seq.empty ): Receive = {
     case Launder( transaction ) =>
+      val toAddresses = clientRepo.getAddresses(transaction.houseEphemeralAddress)
+      val amounts = allocateToNAddresses(transaction.amount, toAddresses.size)
+      context.become( process( amounts zip toAddresses) )
       context.system.scheduler.scheduleOnce(50 milliseconds, self, Tick(sender()))
 
     case Tick(sender) =>
@@ -74,7 +77,7 @@ class MixingService( clientRepo: ClientRepo, houseAccount: ActorRef, config: Job
     if(addresses.isEmpty) Future{Left(s"no addresses for ${transaction.houseEphemeralAddress} - NOT a valid House Address")}
 
     else{
-      val clientDelegate = system.actorOf(ClientActor(houseAccount, transaction, config), transaction.clientPublicAddress)
+      val clientDelegate = system.actorOf(ClientActor(houseAccount, clientRepo, transaction, config), transaction.clientPublicAddress)
 
       implicit val timeout: Timeout = 5 seconds
 

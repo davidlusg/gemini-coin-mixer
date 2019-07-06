@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import pureconfig.loadConfig
 import pureconfig.generic.auto._
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 
 
@@ -51,12 +51,13 @@ object MainSupport{
             ClientTransaction( user, houseAddress, amount)
           }
 
-        if( perhapsClientAddress.isDefined ) JsSuccess(perhapsClientAddress.get)
-        else if (perhapsClientTransaction.isDefined ) JsSuccess(perhapsClientTransaction.get)
-        else JsError(Seq(JsPath() -> Seq(JsonValidationError("error.invalid"))))
+        perhapsClientAddress map{ JsSuccess(_) } getOrElse
+          perhapsClientTransaction.map{ JsSuccess(_) }.getOrElse{
+            JsError(Seq(JsPath() -> Seq(JsonValidationError(s"invalid json for command${json.toString()}"))))
+          }
 
       case _ =>
-        JsError(Seq(JsPath() -> Seq(JsonValidationError("error.invalid"))))
+        JsError(Seq(JsPath() -> Seq(JsonValidationError(s"Invalid command: $json"))))
     }
   }
 
@@ -71,8 +72,8 @@ object MainSupport{
         case err =>
           Left(s"Invalid command $s: $err")
       }
-      case err =>
-        Left(s"Invalid command $err:")
+      case Failure(err) =>
+        Left(s"Bad Json Command ${err.getMessage}:")
     }
   }
 }
