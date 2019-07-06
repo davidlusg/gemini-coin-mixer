@@ -68,17 +68,17 @@ class MixingService( clientRepo: ClientRepo, houseAccount: ActorRef, config: Job
   import scala.concurrent.ExecutionContext.Implicits._
 
 
-  def mix( transaction: Transaction ): Future[Transaction] = {
+  def mix( transaction: Transaction ): Future[Either[String,Transaction]] = {
     val addresses: Seq[String] = clientRepo.getAddresses(transaction.houseEphemeralAddress)
 
-    if(addresses.isEmpty) throw new Exception(s"no addresses for ${transaction.clientPublicAddress}")
+    if(addresses.isEmpty) Future{Left(s"no addresses for ${transaction.houseEphemeralAddress} - NOT a valid House Address")}
 
     else{
       val clientDelegate = system.actorOf(ClientActor(houseAccount, transaction, config), transaction.clientPublicAddress)
 
       implicit val timeout: Timeout = 5 seconds
 
-      (clientDelegate ?  Launder( transaction )).mapTo[Transaction]
+      (clientDelegate ?  Launder( transaction )).mapTo[Transaction].map{Right(_)}
     }
   }
 

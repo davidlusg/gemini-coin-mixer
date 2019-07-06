@@ -126,13 +126,17 @@ object Main extends App {
               }
 
             case Right(cmd: ClientTransaction) =>
-              mixingService.mix(Transaction(cmd.user, cmd.houseAddress, cmd.amount, Seq.empty, Seq.empty)).map{ mixedTransaction =>
-                val res = mixedTransaction.outputs.map{
-                  case( address, amt) =>
-                    s"$amt sent to $address"
+              mixingService.mix(Transaction(cmd.user, cmd.houseAddress, cmd.amount, Seq.empty, Seq.empty)).map{ maybeMixedTransactions =>
+                maybeMixedTransactions match{
+                  case Right(x: Transaction) =>
+                    x.outputs
+                      .map{
+                        case( address, amt) =>
+                          s"$amt sent to $address"
+                      }.mkString(",")
+                  case Left(err) => s"Failure to mix: $err"
                 }
 
-                res.mkString(",")
               }
 
             case Left(err) =>
