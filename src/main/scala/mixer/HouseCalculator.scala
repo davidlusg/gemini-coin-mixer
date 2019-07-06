@@ -16,7 +16,7 @@ trait HouseCalculator {
   // 8 decimals
   def allocateToNAddresses(amt: BigDecimal, numAddresses: Int ) = {
 
-    val approxPerAddress: BigDecimal = (amt/numAddresses).setScale(8, BigDecimal.RoundingMode.HALF_UP)
+    val approxPerAddress: BigDecimal = (amt/numAddresses).setScale(config.jobcoinPrecision, BigDecimal.RoundingMode.HALF_UP)
 
     List.tabulate[BigDecimal](numAddresses){ idx: Int =>
       if( idx < numAddresses-1) approxPerAddress

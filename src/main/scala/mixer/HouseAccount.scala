@@ -1,7 +1,7 @@
 package mixer
 
 import akka.actor.Actor
-import mixer.HouseAccount.Launder
+import mixer.HouseAccount.{Balance, Launder}
 import mixer.Transaction.Transaction
 import akka.pattern.ask
 import akka.util.Timeout
@@ -9,18 +9,18 @@ import akka.pattern.pipe
 import server.Main.JobcoinConfig
 import service.ClientRepo
 
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 object HouseAccount{
   case class Launder( tx: Transaction )
+  case object Balance
 }
 
-class HouseAccount( clientRepo: ClientRepo, config: JobcoinConfig) extends Actor with HouseCalculator {
+class HouseAccount(clientRepo: ClientRepo, jobcoinConfig: JobcoinConfig) extends Actor with HouseCalculator {
 
   import scala.concurrent.ExecutionContext.Implicits._
 
-  var accountBalance: BigDecimal = config.houseSeedAmount
+  override def config: JobcoinConfig = jobcoinConfig
 
   def receive = {
     case Launder( tx: Transaction ) =>
@@ -40,6 +40,8 @@ class HouseAccount( clientRepo: ClientRepo, config: JobcoinConfig) extends Actor
       }
 
       f pipeTo( sender )
+
+    case Balance => Future{ balance }
 
     case _ =>
   }
