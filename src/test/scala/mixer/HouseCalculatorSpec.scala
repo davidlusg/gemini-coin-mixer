@@ -1,5 +1,6 @@
-import mixer.HouseCalculator
-import org.scalatest.{FlatSpec, Matchers, WordSpec}
+package mixer
+
+import org.scalatest.{Matchers, WordSpec}
 import server.Main.{JobcoinConfig, Server}
 
 import scala.collection.mutable.ListBuffer

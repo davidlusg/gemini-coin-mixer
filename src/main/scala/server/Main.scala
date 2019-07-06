@@ -8,7 +8,7 @@ import akka.stream.scaladsl.{Flow, Source, Tcp}
 import akka.stream.scaladsl.Tcp.{IncomingConnection, ServerBinding}
 import akka.util.ByteString
 import mixer.HouseAccount
-import mixer.Transaction.Transaction
+import mixer.Transactions.Transaction
 import play.api.libs.json.{Format, JsArray, JsError, JsNumber, JsObject, JsPath, JsResult, JsString, JsSuccess, JsValue, Json, JsonValidationError, Reads}
 import server.MainSupport.{ClientAddresses, ClientTransaction}
 import service.{ClientRepo, MixingService}

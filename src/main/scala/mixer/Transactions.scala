@@ -2,7 +2,7 @@ package mixer
 
 import java.security.PublicKey
 
-object Transaction {
+object Transactions {
 
   type PublicKey = String
 

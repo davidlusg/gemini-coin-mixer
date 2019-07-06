@@ -2,7 +2,7 @@ package mixer
 
 import akka.actor.Actor
 import mixer.HouseAccount.{Balance, Launder}
-import mixer.Transaction.Transaction
+import mixer.Transactions.Transaction
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.pattern.pipe
@@ -36,7 +36,7 @@ class HouseAccount(clientRepo: ClientRepo, jobcoinConfig: JobcoinConfig) extends
       val f = Future{
         val addresses = clientRepo.getAddresses( tx.houseEphemeralAddress )
         val allocated = addresses zip allocateToNAddresses( tx.amount, addresses.size )
-        mixer.Transaction.Transaction(tx.clientPublicAddress, tx.houseEphemeralAddress, tx.amount - fee, Seq.empty, allocated)
+        mixer.Transactions.Transaction(tx.clientPublicAddress, tx.houseEphemeralAddress, tx.amount - fee, Seq.empty, allocated)
       }
 
       f pipeTo( sender )

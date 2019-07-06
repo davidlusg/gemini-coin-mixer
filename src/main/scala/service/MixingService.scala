@@ -2,7 +2,7 @@ package service
 
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import mixer.HouseAccount.Launder
-import mixer.Transaction.{PublicKey, Transaction}
+import mixer.Transactions.{PublicKey, Transaction}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
