@@ -39,7 +39,9 @@ Within a terminal:
 `
 
 You will see in your Main (e.g. Intellij console) something like this where each line is printed 1 second apart demonstrating the deposits over time.:
-`
-Sending transaction 3.00000000 "address1"  to P2P
-Sending transaction 2.99999999 "address2"  to P2P
-Finished my work - going away`
+
+`Sending transaction 3.00000000 "address1"  to P2P`
+
+`Sending transaction 2.99999999 "address2"  to P2P`
+
+`Finished my work - going away`
