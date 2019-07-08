@@ -11,12 +11,12 @@ Instructions to run:
 
 1. brew install telnet
 2. git clone git@github.com:davidlusg/gemini-coin-mixer.git
-3. start the server
+3. start the server - run https://github.com/davidlusg/gemini-coin-mixer/blob/master/src/main/scala/server/Main.scala
 4. telnet https://github.com/davidlusg/gemini-coin-mixer/blob/master/src/main/resources/application.conf#L3
 5. Send a request for a house address and provide client addresses.
 `{"user": "davidlu", "addresses": ["address1", "address2"]}`
 6. To send a mixing request, you must send coins to the address received in step 5 like this:
-`{"user": "davidlu", "houseAddress": "<what was received in (5)>", "amount": 5.99999999}`
+`{"user": "davidlu", "houseAddress": "<house address from (step 5)>", "amount": 5.99999999}`
 
 Here is an actual run:
 Within a terminal:
