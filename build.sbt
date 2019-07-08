@@ -12,6 +12,9 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-async" % "0.9.7"
 
 libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.11.1"
 
+libraryDependencies += "org.scalamock" %% "scalamock" % "4.3.0" % Test
+libraryDependencies += "org.mockito" % "mockito-core" % "2.8.47" % Test
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "2.5.12",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.12" % Test

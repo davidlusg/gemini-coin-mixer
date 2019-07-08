@@ -1,12 +1,11 @@
 package mixer
 
+import mixer.Transactions.PublicKey
 import server.Main.JobcoinConfig
 
 import scala.collection.mutable.ListBuffer
 
 trait HouseCalculator {
-
-  type PublicKey = String
 
   def config: JobcoinConfig
 
@@ -20,7 +19,7 @@ trait HouseCalculator {
 
     List.tabulate[BigDecimal](numAddresses){ idx: Int =>
       if( idx < numAddresses-1) approxPerAddress
-      else amt - (idx * approxPerAddress).setScale(8, BigDecimal.RoundingMode.HALF_UP)
+      else amt - (idx * approxPerAddress).setScale(config.jobcoinPrecision, BigDecimal.RoundingMode.HALF_UP)
     }
   }
 

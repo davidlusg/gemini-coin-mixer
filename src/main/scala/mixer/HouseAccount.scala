@@ -2,7 +2,7 @@ package mixer
 
 import akka.actor.Actor
 import mixer.HouseAccount.{Balance, Launder}
-import mixer.Transactions.Transaction
+import mixer.Transactions.{PublicKey, Transaction}
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.pattern.pipe

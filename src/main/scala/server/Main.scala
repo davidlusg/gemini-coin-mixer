@@ -10,7 +10,7 @@ import akka.util.ByteString
 import mixer.HouseAccount
 import mixer.Transactions.Transaction
 import play.api.libs.json.{Format, JsArray, JsError, JsNumber, JsObject, JsPath, JsResult, JsString, JsSuccess, JsValue, Json, JsonValidationError, Reads}
-import server.MainSupport.{ClientAddresses, ClientTransaction}
+import server.MainSupport.{ClientAddressesCmd, ClientTransactionCmd}
 import service.{ClientRepo, MixingService}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,32 +23,32 @@ import scala.util.{Failure, Success, Try}
 
 object MainSupport{
 
-  implicit val clientAddressCmdFmt: Format[ClientAddresses] = Json.format[ClientAddresses]
-  implicit val clientTransactionCmdFmt: Format[ClientTransaction] = Json.format[ClientTransaction]
+  implicit val clientAddressCmdFmt: Format[ClientAddressesCmd] = Json.format[ClientAddressesCmd]
+  implicit val clientTransactionCmdFmt: Format[ClientTransactionCmd] = Json.format[ClientTransactionCmd]
 
   sealed trait Command
-  case class ClientAddresses(user: String, addresses: Seq[String]) extends Command
-  case class ClientTransaction( user: String, houseAddress: String, amount: BigDecimal ) extends Command
+  case class ClientAddressesCmd(user: String, addresses: Seq[String]) extends Command
+  case class ClientTransactionCmd(user: String, houseAddress: String, amount: BigDecimal ) extends Command
 
   implicit object commandReads extends Reads[Command] {
     def reads(json: JsValue): JsResult[Command] = json match {
       case JsObject(mapObj) =>
 
-        val perhapsClientAddress: Option[ClientAddresses] =
+        val perhapsClientAddress: Option[ClientAddressesCmd] =
           for{
             JsString(user) <- mapObj.get("user")
             JsArray(addresses) <- mapObj.get("addresses")
           } yield{
-            ClientAddresses(user, addresses.map(_.toString()))
+            ClientAddressesCmd(user, addresses.map(_.toString()))
           }
 
-        val perhapsClientTransaction: Option[ClientTransaction] =
+        val perhapsClientTransaction: Option[ClientTransactionCmd] =
           for{
             JsString(user) <- mapObj.get("user")
             JsString(houseAddress) <- mapObj.get("houseAddress")
             JsNumber(amount) <- mapObj.get("amount")
           } yield{
-            ClientTransaction( user, houseAddress, amount)
+            ClientTransactionCmd( user, houseAddress, amount)
           }
 
         perhapsClientAddress map{ JsSuccess(_) } getOrElse
@@ -88,8 +88,10 @@ object Main extends App {
     }
   }
 
-
-  case class JobcoinConfig(server: Server, houseSeedAmount: BigDecimal, maxMixingTimeSeconds: Int, mixingFeeFactor: Double, jobcoinPrecision: Int)
+  /*
+  Config case class loaded by pureconfig.  Eases testing with case classes vs. passing typesafe config objects around.
+   */
+  case class JobcoinConfig(server: Server, houseSeedAmount: BigDecimal, maxMixingTimeSeconds: Int, mixingFeeFactor: Double, jobcoinPrecision: Int, mixingDelayMillis: Long)
   case class Server(host: String, port: Int)
   val config: JobcoinConfig = loadConfig[JobcoinConfig] match{
     case Left(ex) =>
@@ -112,6 +114,14 @@ object Main extends App {
   val connections: Source[IncomingConnection, Future[ServerBinding]] =
     Tcp().bind(config.server.host, config.server.port)
 
+
+  /**
+    * I decided to go the routes of IO Akka Streams vs. a pure Play app
+    * This stream listens to commands on the port sent (via telnet, eg)
+    * Only two types of commands are understood:
+    * 1. Send seq of public key addresses.  Reply with house address.
+    * 2. Send amount with house address.  Reply after all mixes are done.
+    */
   connections.runForeach { connection =>
 
     val process = Flow[ByteString]
@@ -121,12 +131,12 @@ object Main extends App {
       .mapAsync(8){ cmd =>
           cmd match{
 
-            case Right(clientAddresses: ClientAddresses) =>
+            case Right(clientAddresses: ClientAddressesCmd) =>
               Future{clientRepo.addAddress(clientAddresses.user, clientAddresses.addresses)}.map { ci =>
                 s"Coins sent to ${ci.userHouseDepositAddress} will be mixed and sent to ${ci.userAddresses.mkString(",")}"
               }
 
-            case Right(cmd: ClientTransaction) =>
+            case Right(cmd: ClientTransactionCmd) =>
               mixingService.mix(Transaction(cmd.user, cmd.houseAddress, cmd.amount, Seq.empty, Seq.empty)).map{ maybeMixedTransactions =>
                 maybeMixedTransactions match{
                   case Right(x: Transaction) =>

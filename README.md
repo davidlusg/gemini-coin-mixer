@@ -16,10 +16,10 @@ Instructions to run:
 5. Send a request for a house address and provide client addresses.
 `{"user": "davidlu", "addresses": ["address1", "address2"]}`
 6. To send a mixing request, you must send coins to the address received in step 5 like this:
-`{"user": "davidlu", "houseAddress": "<what was received in (5)>", "amount": 5.99999999}
+`{"user": "davidlu", "houseAddress": "<what was received in (5)>", "amount": 5.99999999}`
 
 Here is an actual run:
-
+Within a terminal:
 `
  [dlu@mbp ~]$ telnet 127.0.0.1 9281
  Trying 127.0.0.1...
@@ -27,11 +27,19 @@ Here is an actual run:
  Escape character is '^]'.
  `
  
- `
- {"user": "davidlu", "addresses": ["address1", "address2"]}
- Coins sent to 1ed54015-aa80-4768-8c4d-e6a583101e61 will be mixed and sent to "address1","address2"
- `
  
- `{"user": "davidlu", "houseAddress": "1ed54015-aa80-4768-8c4d-e6a583101e61", "amount": 5.99999999}
- 3.00000000 sent to "address1",2.99999999 sent to "address2"
+ `{"user": "davidlu", "addresses": ["address1", "address2"]}`
+ 
+ `Coins sent to 1ed54015-aa80-4768-8c4d-e6a583101e61 will be mixed and sent to "address1","address2"`
+ 
+ 
+ `{"user": "davidlu", "houseAddress": "1ed54015-aa80-4768-8c4d-e6a583101e61", "amount": 5.99999999}`
+ 
+ `3.00000000 sent to "address1",2.99999999 sent to "address2"`
 `
+
+You will see in your Main (e.g. Intellij console) something like this where each line is printed 1 second apart demonstrating the deposits over time.:
+`
+Sending transaction 3.00000000 "address1"  to P2P
+Sending transaction 2.99999999 "address2"  to P2P
+Finished my work - going away`

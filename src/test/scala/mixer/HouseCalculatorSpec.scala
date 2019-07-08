@@ -11,7 +11,7 @@ class HouseCalculatorSpec extends WordSpec with Matchers {
 
     val jobcoinPrecision = 8
     val calc = new HouseCalculator {
-      override def config = JobcoinConfig(Server("localhost", 9000), BigDecimal(1.0), 10, 0.01d, jobcoinPrecision)
+      override def config = JobcoinConfig(Server("localhost", 9000), BigDecimal(1.0), 10, 0.01d, jobcoinPrecision, 1000)
     }
 
     "allocating 1 Jobcoin to 4 addresses" should {

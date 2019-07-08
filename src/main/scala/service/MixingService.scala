@@ -19,6 +19,15 @@ object ClientActor{
 
 }
 
+/**
+  * The ClientActor does most of the heavy lifting for mixing a single transaction into multiple transactions.
+  * The actor is an ephemeral actor - it holds the state of the transactions and delays laundering each transaction until all are done.
+  * Then it goes away.
+  * @param houseAccount
+  * @param clientRepo
+  * @param transaction
+  * @param jobConfig
+  */
 class ClientActor(houseAccount: ActorRef, clientRepo: ClientRepo, transaction: Transaction, jobConfig: JobcoinConfig) extends Actor with HouseCalculator{
 
   implicit val timeout: Timeout = 4 seconds
@@ -26,42 +35,47 @@ class ClientActor(houseAccount: ActorRef, clientRepo: ClientRepo, transaction: T
 
   override def config = jobConfig
 
-  def process( toBeMixed: Seq[(BigDecimal, PublicKey)] = Seq.empty ): Receive = {
+  def publish( pair: (PublicKey, BigDecimal) ) : Future[Unit] = Future{ println( s"Sending transaction ${pair._2} ${pair._1}  to P2P")}
+
+  def process( orig: List[(PublicKey, BigDecimal)] = List.empty[(PublicKey, BigDecimal)], toBeMixed: List[(PublicKey, BigDecimal)] = List.empty[(PublicKey, BigDecimal)] ): Receive = {
     case Launder( transaction ) =>
-      val toAddresses = clientRepo.getAddresses(transaction.houseEphemeralAddress)
-      val amounts = allocateToNAddresses(transaction.amount, toAddresses.size)
-      context.become( process( amounts zip toAddresses) )
-      context.system.scheduler.scheduleOnce(50 milliseconds, self, Tick(sender()))
+      val toAddresses: List[String] = clientRepo.getAddresses(transaction.houseEphemeralAddress).toList
+      val amounts: List[BigDecimal] = allocateToNAddresses(transaction.amount, toAddresses.size)
+      val addresses_amounts: List[(PublicKey, BigDecimal)] = toAddresses zip amounts
+      context.become( process( addresses_amounts, addresses_amounts) )
+      context.system.scheduler.scheduleOnce(jobConfig.mixingDelayMillis milliseconds, self, Tick(sender()))
 
     case Tick(sender) =>
-      toBeMixed match{
+      toBeMixed match {
+
         case h::t =>
-          context.become( process(t) )
+          context.become( process(orig, t) )
           (houseAccount ? Launder( transaction))
-            .pipeTo(sender)
-          .andThen{
-            case _ => self ! Tick(sender)
+            .mapTo[Transaction]
+            .flatMap{ _ =>
+              publish(h)
+            }
+          .andThen{ case _ =>
+            context.system.scheduler.scheduleOnce(jobConfig.mixingDelayMillis milliseconds, self, Tick(sender))
           }
-        case _ =>
-          self ! PoisonPill
+
+        case Nil =>
+          Future{transaction.copy(outputs = orig)}
+            .pipeTo(sender)
+              .andThen{ case _ =>
+                println( s"Finished my work - going away")
+                self ! PoisonPill
+              }
+
+        case err =>
+          println( s"GotBad $err")
+
       }
 
-
   }
 
-  def receive = {
-    case Launder( transaction ) =>
-      context.system.scheduler.scheduleOnce(50 milliseconds, self, Tick(sender()))
+  def receive: Receive = process()
 
-    case Tick(sender) =>
-      (houseAccount ? Launder( transaction))
-        .pipeTo(sender)
-        .andThen{
-          case _ =>
-            println( s"Finished my work - going away")
-            self ! PoisonPill
-        }
-  }
 }
 
 class MixingService( clientRepo: ClientRepo, houseAccount: ActorRef, config: JobcoinConfig ) {
@@ -81,7 +95,12 @@ class MixingService( clientRepo: ClientRepo, houseAccount: ActorRef, config: Job
 
       implicit val timeout: Timeout = 5 seconds
 
-      (clientDelegate ?  Launder( transaction )).mapTo[Transaction].map{Right(_)}
+      (clientDelegate ?  Launder( transaction ))
+        .mapTo[Transaction]
+        .map{
+          case tx =>
+            Right(tx)
+        }
     }
   }
 
